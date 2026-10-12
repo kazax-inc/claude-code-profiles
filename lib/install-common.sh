@@ -220,33 +220,41 @@ cc_install_main() {
     # shellcheck source=lib/ccp.sh
     . "$root/.ccp/ccp.sh"
 
+    # Three cases, one question each:
+    #   profiles already there        -> only offer to pick the default among them
+    #   none, native config found     -> offer to migrate it
+    #   none, nothing to migrate      -> offer to create the first profile
     name=""
     if [ "$assume_yes" -eq 0 ]; then
         printf '\n'
         if [ -n "$(_ccp_profiles)" ]; then
-            printf 'Existing profiles (kept as they are, ready to use):\n'
+            printf 'Profiles found in %s (kept as they are, ready to use):\n' "$root"
             _ccp_list
-        fi
-        if _ccp_has_native; then
-            printf 'Found an existing Claude Code configuration (~/.claude, ~/.claude.json).\n'
-            if _cci_yes 'Migrate it into a new profile (the files are moved)? [Y/n] ' y; then
-                _cci_ask 'Name of the profile: ' ''
-                name="$_CCI_REPLY"
-                if [ -n "$name" ]; then _ccp_main add "$name" --migrate || name=""; fi
+            if _ccp_has_native; then
+                printf 'Note: ~/.claude is not managed by %s. To move it into a profile later:\n' "$cmd"
+                printf '  %s add <profile> --migrate\n' "$cmd"
             fi
-        fi
-        if [ -z "$name" ]; then
-            if [ -z "$(_ccp_profiles)" ]; then
-                _cci_ask 'Name of your first profile (empty to skip): ' ''
-            else
-                _cci_ask 'Name of a profile to create or reuse (empty to skip): ' ''
+            _cci_ask 'Which of these profiles should be the default (empty to skip)? ' ''
+            if [ -n "$_CCI_REPLY" ] && name="$(_ccp_resolve "$_CCI_REPLY")"; then
+                _CCP_INSTALLER=1 _ccp_main default "$name"
+            elif [ -n "$_CCI_REPLY" ]; then
+                printf 'No default set. Later: %s default <profile>, or %s add <profile> for a new one.\n' "$cmd" "$cmd"
             fi
+            name=""
+        elif _ccp_has_native; then
+            printf 'Found your current Claude Code configuration (~/.claude, ~/.claude.json).\n'
+            printf 'Migrating moves it into a %s profile, so you keep your settings, history and login.\n' "$cmd"
+            _cci_ask 'Profile name to migrate it to (empty to skip): ' ''
             name="$_CCI_REPLY"
-            if [ -n "$name" ] && _ccp_valid_name "$name" && [ -d "$root/$name" ]; then
-                printf "Profile '%s' already exists; using it as it is.\n" "$name"
-            elif [ -n "$name" ]; then
-                _ccp_main add "$name" || name=""
+            if [ -n "$name" ]; then
+                _ccp_main add "$name" --migrate || name=""
+            else
+                printf 'Not migrated. Later: %s add <profile> --migrate\n' "$cmd"
             fi
+        else
+            _cci_ask 'Name of your first profile (empty to skip): ' ''
+            name="$_CCI_REPLY"
+            if [ -n "$name" ]; then _ccp_main add "$name" || name=""; fi
         fi
         if [ -n "$name" ] && _cci_yes "Make '$name' the default profile? [Y/n] " y; then
             _CCP_INSTALLER=1 _ccp_main default "$name"

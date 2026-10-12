@@ -24,14 +24,19 @@ The installer:
    `-Name <command>`),
 3. copies the `ccp` function to `<profiles>/.ccp/` and adds a small marked block
    to the shell rc file that loads it,
-4. asks for a first profile. If `~/.claude` / `~/.claude.json` already exist it
-   offers to **move** them into that profile,
-5. asks whether that profile becomes the default, and how (see below).
+4. sets up a profile, with one question depending on what it finds:
+   - profiles already in the directory: lists them and asks which one should be
+     the default. Nothing is created or migrated;
+   - no profile, but `~/.claude` / `~/.claude.json` exist: offers to **migrate**
+     (move) that configuration into a profile you name;
+   - nothing at all: asks for the name of your first profile,
+5. for a migrated or new profile, asks whether it becomes the default, and how
+   (see below).
 
 Existing profiles are never touched: the installer only writes `<profiles>/.ccp/`
-and the rc block. A directory that already holds profiles is used as it is, and
-naming an existing profile at the prompt reuses it instead of creating it. What
-is inside a profile directory belongs to Claude Code, not to `ccp`.
+and the rc block. A directory that already holds profiles is used as it is; add
+more later with `ccp add <profile>`. What is inside a profile directory belongs
+to Claude Code, not to `ccp`.
 
 Other options: `--shell bash|zsh` and `--yes` (no questions, no profile
 created); on Windows `-Yes`. Re-running the installer is safe; it replaces its

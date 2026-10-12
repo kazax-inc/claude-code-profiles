@@ -97,11 +97,13 @@ suite() {
     echo '{}' >"$ihome/.claude.json"
     case "${sh##*/}" in zsh) rc="$ihome/.zshrc" ;; *) rc="$ihome/.bashrc" ;; esac
     printf 'export CLAUDE_CONFIG_DIR=/legacy\n' >"$rc"
-    # answers: directory (default), command name (default), migrate, profile name, make default, method
-    out="$(printf '\n\ny\nmain\ny\n2\n' | HOME="$ihome" SHELL="/bin/${sh##*/}" ZDOTDIR='' CLAUDE_PROFILES_DIR='' \
+    # answers: directory (default), command name (default), profile to migrate to, make default, method
+    out="$(printf '\n\nmain\ny\n2\n' | HOME="$ihome" SHELL="/bin/${sh##*/}" ZDOTDIR='' CLAUDE_PROFILES_DIR='' \
         bash "$repo/install-linux.sh" 2>&1)"
     check 'installer registers' "Registered the ccp command in $rc" "$out"
     check 'installer warns legacy' 'line 1:export CLAUDE_CONFIG_DIR=/legacy' "$out"
+    check 'installer offers migration' 'Profile name to migrate it to' "$out"
+    check 'installer does not offer create' 'absent' "$(case "$out" in *'first profile'*) ;; *) echo absent ;; esac)"
     check 'installer migrates' "$ihome/.claude-profiles/default" "$(readlink "$ihome/.claude")"
     HOME="$ihome" SHELL="/bin/${sh##*/}" ZDOTDIR='' bash "$repo/install-linux.sh" --yes >/dev/null 2>&1
     check 'installer idempotent' '1' "$(grep -c '>>> claude-profiles >>>' "$rc")"
@@ -133,11 +135,13 @@ suite() {
     echo note >"$eroot/alpha/projects/x"
     ln -s beta "$eroot/default"
     before="$(cd "$eroot" && find alpha beta | sort | xargs ls -ld --time-style=full-iso; cat alpha/.credentials.json alpha/.claude.json)"
-    # answers: directory (default), command name (default), existing profile name, make default, method link
-    out="$(printf '\n\nalpha\ny\n3\n' | HOME="$ehome" SHELL="/bin/${sh##*/}" ZDOTDIR='' CLAUDE_PROFILES_DIR='' \
+    # answers: directory (default), command name (default), default profile, method link
+    out="$(printf '\n\nalpha\n3\n' | HOME="$ehome" SHELL="/bin/${sh##*/}" ZDOTDIR='' CLAUDE_PROFILES_DIR='' \
         bash "$repo/install-linux.sh" 2>&1)"
     check 'existing profiles listed' 'beta [link]' "$out"
-    check 'existing profile reused' "Profile 'alpha' already exists; using it as it is." "$out"
+    check 'existing profiles: default question' 'Which of these profiles should be the default' "$out"
+    check 'existing profiles: no create or migrate question' 'absent' \
+        "$(case "$out" in *'first profile'* | *'migrate it to'*) ;; *) echo absent ;; esac)"
     check 'existing profile made default' 'default -> alpha' "$out"
     HOME="$ehome" SHELL="/bin/${sh##*/}" ZDOTDIR='' bash "$repo/install-linux.sh" --yes >/dev/null 2>&1
     check 'existing profiles untouched' "$before" \

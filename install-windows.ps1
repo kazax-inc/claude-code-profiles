@@ -138,32 +138,43 @@ $env:CLAUDE_PROFILES_DIR = $Dir
 $CcpCommand = $Name
 . (Join-Path $ccDir 'ccp.ps1')
 
+# Three cases, one question each:
+#   profiles already there        -> only offer to pick the default among them
+#   none, native config found     -> offer to migrate it
+#   none, nothing to migrate      -> offer to create the first profile
 if (-not $Yes) {
     Write-Host ''
     $profileName = $null
     if (@(Get-CcProfiles).Count -gt 0) {
-        Write-Host 'Existing profiles (kept as they are, ready to use):'
+        Write-Host "Profiles found in $Dir (kept as they are, ready to use):"
         Show-CcProfiles
-    }
-    if (Test-CcNative) {
-        Write-Host 'Found an existing Claude Code configuration (~\.claude, ~\.claude.json).'
-        if ((Read-Host 'Migrate it into a new profile (the files are moved)? [Y/n]') -notmatch '^[nN]') {
-            $profileName = Read-Host 'Name of the profile'
-            if ($profileName) {
-                Invoke-Ccp add $profileName --migrate
-                if (@(Get-CcProfiles) -notcontains $profileName) { $profileName = $null }
+        if (Test-CcNative) {
+            Write-Host "Note: ~\.claude is not managed by $Name. To move it into a profile later:"
+            Write-Host "  $Name add <profile> --migrate"
+        }
+        $answer = Read-Host 'Which of these profiles should be the default (empty to skip)?'
+        if ($answer) {
+            $resolved = Resolve-CcProfile $answer
+            if ($resolved) {
+                $env:_CCP_INSTALLER = '1'
+                try { Invoke-Ccp default $resolved } finally { Remove-Item Env:_CCP_INSTALLER -ErrorAction SilentlyContinue }
+            } else {
+                Write-Host "No default set. Later: $Name default <profile>, or $Name add <profile> for a new one."
             }
         }
-    }
-    if (-not $profileName) {
-        if (@(Get-CcProfiles).Count -eq 0) {
-            $profileName = Read-Host 'Name of your first profile (empty to skip)'
+    } elseif (Test-CcNative) {
+        Write-Host 'Found your current Claude Code configuration (~\.claude, ~\.claude.json).'
+        Write-Host "Migrating moves it into a $Name profile, so you keep your settings, history and login."
+        $profileName = Read-Host 'Profile name to migrate it to (empty to skip)'
+        if ($profileName) {
+            Invoke-Ccp add $profileName --migrate
+            if (@(Get-CcProfiles) -notcontains $profileName) { $profileName = $null }
         } else {
-            $profileName = Read-Host 'Name of a profile to create or reuse (empty to skip)'
+            Write-Host "Not migrated. Later: $Name add <profile> --migrate"
         }
-        if ($profileName -and @(Get-CcProfiles) -contains $profileName) {
-            Write-Host "Profile '$profileName' already exists; using it as it is."
-        } elseif ($profileName) {
+    } else {
+        $profileName = Read-Host 'Name of your first profile (empty to skip)'
+        if ($profileName) {
             Invoke-Ccp add $profileName
             if (@(Get-CcProfiles) -notcontains $profileName) { $profileName = $null }
         }
