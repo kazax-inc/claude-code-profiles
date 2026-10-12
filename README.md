@@ -104,14 +104,3 @@ examples in this file assume `ccp`.
   confirmation.
 
 To change the name later, run the installer again with `--name <command>`.
-
-## Layout
-
-```text
-install-linux.sh    install-macos.sh    install-windows.ps1
-uninstall-linux.sh  uninstall-macos.sh  uninstall-windows.ps1
-lib/ccp.sh              the ccp function for bash and zsh
-lib/ccp.ps1             the ccp function for PowerShell
-lib/install-common.sh   shared by the Linux and macOS install/uninstall scripts
-tests/test.sh           tests/test.sh [bash] [zsh]
-```
