@@ -242,9 +242,9 @@ _ccp_pick_method() {
     root="$(_ccp_root)"
     {
         printf '%s\n' "$1"
-        printf '  1) env     export CLAUDE_CONFIG_DIR            -> plain `claude`, this shell session\n'
-        printf '  2) global  symlink ~/.claude, ~/.claude.json   -> every `claude`, all shells\n'
-        printf '  3) link    symlink %s/default -> `%s` without a profile\n' "$root" "$_CCP_CMD"
+        printf '  1) %-24s%18s -> env     export CLAUDE_CONFIG_DIR\n' 'this shell session' '(`claude` command)'
+        printf '  2) %-24s%18s -> symlink ~/.claude, ~/.claude.json\n' 'global, all shells' '(`claude` command)'
+        printf '  3) %-24s%18s -> link    symlink %s/default\n' "\`$_CCP_CMD\` without a profile" "(\`$_CCP_CMD\` command)" "$root"
     } >&2
     _ccp_ask 'Method [1-3]: ' ''
 }

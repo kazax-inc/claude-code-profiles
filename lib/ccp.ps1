@@ -240,9 +240,10 @@ function Set-CcDefaultEnv([string]$Name, $Persist) {
 
 function Read-CcMethod([string]$Title) {
     Write-Host $Title
-    Write-Host "  1) env     set `$env:CLAUDE_CONFIG_DIR            -> plain 'claude', this session"
-    Write-Host "  2) global  link ~\.claude, ~\.claude.json        -> every 'claude', all shells"
-    Write-Host "  3) link    link $(Join-Path (Get-CcRoot) 'default') -> '$(Get-CcCmd)' without a profile"
+    $cmd = Get-CcCmd
+    Write-Host ("  1) {0,-24}{1,18} -> env     set `$env:CLAUDE_CONFIG_DIR" -f 'this session', "('claude' command)")
+    Write-Host ("  2) {0,-24}{1,18} -> link    ~\.claude, ~\.claude.json" -f 'global, all shells', "('claude' command)")
+    Write-Host ("  3) {0,-24}{1,18} -> link    $(Join-Path (Get-CcRoot) 'default')" -f "'$cmd' without a profile", "('$cmd' command)")
     return (Read-Host 'Method [1-3]')
 }
 
